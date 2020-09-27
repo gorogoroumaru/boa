@@ -13,7 +13,7 @@ use crate::{
     builtins::BuiltIn,
     gc::{empty_trace, Finalize, Trace},
     object::{ConstructorBuilder, ObjectData},
-    property::{Attribute, Property},
+    property::{Attribute, DataDescriptor},
     value::{RcString, Value},
     BoaProfiler, Context, Result,
 };
@@ -379,8 +379,8 @@ impl RegExp {
                 }
 
                 let result = Value::from(result);
-                result.set_property("index", Property::default().value(Value::from(m.start())));
-                result.set_property("input", Property::default().value(Value::from(arg_str)));
+                result.set_property("index", DataDescriptor::new(m.start(), Attribute::all()));
+                result.set_property("input", DataDescriptor::new(arg_str, Attribute::all()));
                 result
             } else {
                 if regex.use_last_index {
@@ -477,10 +477,10 @@ impl RegExp {
                     let match_val = Value::from(match_vec);
 
                     match_val
-                        .set_property("index", Property::default().value(Value::from(m.start())));
+                        .set_property("index", DataDescriptor::new(m.start(), Attribute::all()));
                     match_val.set_property(
                         "input",
-                        Property::default().value(Value::from(arg_str.clone())),
+                        DataDescriptor::new(arg_str.clone(), Attribute::all()),
                     );
                     matches.push(match_val);
 

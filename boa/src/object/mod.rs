@@ -10,7 +10,7 @@ use crate::{
     },
     context::StandardConstructor,
     gc::{Finalize, Trace},
-    property::{Attribute, Property, PropertyKey},
+    property::{Attribute, DataDescriptor, PropertyDescriptor, PropertyKey},
     value::{RcBigInt, RcString, RcSymbol, Value},
     BoaProfiler, Context,
 };
@@ -59,11 +59,11 @@ impl<T: Any + Debug + Trace> NativeObject for T {
 pub struct Object {
     /// The type of the object.
     pub data: ObjectData,
-    indexed_properties: FxHashMap<u32, Property>,
+    indexed_properties: FxHashMap<u32, PropertyDescriptor>,
     /// Properties
-    string_properties: FxHashMap<RcString, Property>,
+    string_properties: FxHashMap<RcString, PropertyDescriptor>,
     /// Symbol Properties
-    symbol_properties: FxHashMap<RcSymbol, Property>,
+    symbol_properties: FxHashMap<RcSymbol, PropertyDescriptor>,
     /// Instance prototype `__proto__`.
     prototype: Value,
     /// Whether it can have new properties added to it.
@@ -737,7 +737,7 @@ impl<'context> ObjectInitializer<'context> {
         K: Into<PropertyKey>,
         V: Into<Value>,
     {
-        let property = Property::data_descriptor(value.into(), attribute);
+        let property = DataDescriptor::new(value, attribute);
         self.object.borrow_mut().insert(key, property);
         self
     }
@@ -868,7 +868,7 @@ impl<'context> ConstructorBuilder<'context> {
         K: Into<PropertyKey>,
         V: Into<Value>,
     {
-        let property = Property::data_descriptor(value.into(), attribute);
+        let property = DataDescriptor::new(value, attribute);
         self.prototype.borrow_mut().insert(key, property);
         self
     }
@@ -880,7 +880,7 @@ impl<'context> ConstructorBuilder<'context> {
         K: Into<PropertyKey>,
         V: Into<Value>,
     {
-        let property = Property::data_descriptor(value.into(), attribute);
+        let property = DataDescriptor::new(value, attribute);
         self.constructor_object.borrow_mut().insert(key, property);
         self
     }
@@ -948,15 +948,12 @@ impl<'context> ConstructorBuilder<'context> {
             FunctionFlags::from_parameters(self.callable, self.constructable),
         );
 
-        let length = Property::data_descriptor(
-            self.length.into(),
+        let length = DataDescriptor::new(
+            self.length,
             Attribute::READONLY | Attribute::NON_ENUMERABLE | Attribute::PERMANENT,
         );
-        let name = Property::data_descriptor(
-            self.name
-                .take()
-                .unwrap_or_else(|| String::from("[object]"))
-                .into(),
+        let name = DataDescriptor::new(
+            self.name.take().unwrap_or_else(|| String::from("[object]")),
             Attribute::READONLY | Attribute::NON_ENUMERABLE | Attribute::PERMANENT,
         );
 

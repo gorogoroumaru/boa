@@ -16,7 +16,7 @@
 use crate::{
     builtins::BuiltIn,
     object::{ConstructorBuilder, Object as BuiltinObject, ObjectData},
-    property::{Attribute, Property},
+    property::{Attribute, PropertyDescriptor},
     value::{same_value, Value},
     BoaProfiler, Context, Result,
 };
@@ -135,7 +135,7 @@ impl Object {
             .get(1)
             .expect("Cannot get object")
             .to_property_key(ctx)?;
-        let desc = Property::from(args.get(2).expect("Cannot get object"));
+        let desc = PropertyDescriptor::from(args.get(2).expect("Cannot get object"));
         obj.set_property(prop, desc);
         Ok(Value::undefined())
     }
@@ -220,12 +220,10 @@ impl Object {
         };
 
         let key = key.to_property_key(ctx)?;
-        let own_property = this
-            .to_object(ctx)
-            .map(|obj| obj.borrow().get_own_property(&key));
+        let own_property = this.to_object(ctx)?.borrow().get_own_property(&key);
 
         Ok(own_property.map_or(Value::from(false), |own_prop| {
-            Value::from(own_prop.enumerable_or(false))
+            Value::from(own_prop.enumerable())
         }))
     }
 }
