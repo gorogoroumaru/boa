@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Boa EcmaScript conformance</title>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+    <link href="../assets/bootstrap.min.css" rel="stylesheet" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+            margin: 1em;
+        }
+
+        .logo {
+            width: 5em;
+        }
+
+        .passed-tests {
+            color: #1FCB4A;
+        }
+
+        .failed-tests {
+            color: #FF4848;
+        }
+
+        .ignored-tests {
+            color: #DFA800;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <h1><img class="logo col-md-12" src="../assets/logo.svg">EcmaScript conformance test results for Boa</h1>
+        </div>
+        <div class="row">
+            <section class="col-md-4" style="display:none" id="version-latest">
+            </section>
+
+            <section class="col-md-4" style="display:none" id="master-latest">
+            </section>
+
+            <section class="col-md-4" style="display:none" id="old-versions">
+            </section>
+        </div>
+        <div class="row" id="info" style="display:none"></div>
+    </div>
+    <script src="/test262/results.js"></script>
+</body>
+
+</html>
