@@ -15,8 +15,8 @@
     .then((data) => {
       latest.master = data;
 
-      let container = document.getElementById("master-latest");
-      container.appendChild(infoLink("master"));
+      let container = $("#master-latest");
+      container.append(infoLink("master"));
     });
 
   // Load master branch information over time:
@@ -25,16 +25,16 @@
     .then((data) => {
       let info = createGeneralInfo(data);
 
-      let container = document.getElementById("master-latest");
-      container.innerHTML = "<h2><code>master</code> branch results:</h2>";
+      let container = $("#master-latest");
+      container.html("<h2><code>master</code> branch results:</h2>");
 
-      container.appendChild(info);
+      container.append(info);
 
       if (typeof latest.master !== "undefined") {
-        container.appendChild(infoLink("master"));
+        container.append(infoLink("master"));
       }
 
-      container.style = "";
+      container.show(400);
 
       // TODO: paint the graph with historical data.
     });
@@ -43,7 +43,6 @@
   fetch("https://api.github.com/repos/boa-dev/boa/releases")
     .then((response) => response.json())
     .then((data) => {
-
       let latestTag = data[0].tag_name;
 
       // We set the latest version.
@@ -52,16 +51,16 @@
         .then((data) => {
           let info = createGeneralInfo(data);
 
-          let container = document.getElementById("version-latest");
-          container.innerHTML = `<h2>Latest version (${latestTag}) results:</h2>`;
+          let container = $("#version-latest");
+          container.html(`<h2>Latest version (${latestTag}) results:</h2>`);
 
-          container.appendChild(info);
+          container.append(info);
 
           if (typeof latest[latestTag] !== "undefined") {
-            container.appendChild(infoLink("master"));
+            container.append(infoLink(latestTag));
           }
 
-          container.style = "";
+          container.show(400);
         });
 
       for (let rel of data) {
@@ -78,8 +77,8 @@
             latest[rel.tag_name] = data;
 
             if (rel.tag_name == latestTag) {
-              let container = document.getElementById("version-latest");
-              container.appendChild(infoLink(rel.tag_name));
+              let container = $("#version-latest");
+              container.append(infoLink(rel.tag_name));
             }
 
             // TODO: add version history.
@@ -89,50 +88,58 @@
 
   // Creates a link to show the information about a particular tag / branch
   function infoLink(tag) {
-    let div = document.createElement("div");
-    let link = document.createElement("a");
+    let div = $("<div></div>");
+    let link = $("<a></a>");
 
-    link.innerHTML = "Show information";
-    link.href = "#";
-    link.addEventListener("click", () => {
+    link.text("Show information");
+    link.attr("href", "#");
+    link.click(() => {
       let data = latest[tag];
       showData(data);
     });
 
-    div.appendChild(link);
+    div.append(link);
     return div;
   }
 
   // Shows the full test data.
   function showData(data) {
-    console.log(data);
+    let infoContainer = $("#info");
+    infoContainer.hide(800);
+    infoContainer.html("");
 
-    let infoContainer = document.getElementById("info");
-    infoContainer.innerHTML = "";
-
-    let suites = document.createElement("ul");
     for (let suite of data.results.suites) {
-      addSuite(suites, suite);
+      addSuite(infoContainer, suite, "info");
     }
 
-    infoContainer.appendChild(suites);
-    infoContainer.style = "";
+    infoContainer.show(800);
 
     // Adds a suite representation to an element.
-    function addSuite(elm, suite) {
-      let li = document.createElement("li");
-      let res = suite.results;
+    function addSuite(elm, suite, parentID) {
+      let li = $("<div></div>");
+      li.addClass("card");
+
+      let newID = parentID + suite.name;
+
+      let header = $("<div></div>");
+      let headerID = newID + "header";
+      header.attr("id", headerID).addClass("card-header").addClass("col-md-12");
 
       // Add overal information:
-      let info = document.createElement("div");
+      let info = $("<button></button>");
+      info
+        .addClass("btn")
+        .addClass("btn-light")
+        .addClass("btn-block")
+        .addClass("text-left")
+        .attr("type", "button")
+        .attr("data-toggle", "collapse");
 
-      let name = document.createElement("span");
-      name.class = "name";
-      name.innerHTML = suite.name;
-      info.appendChild(name);
+      let name = $("<span></span>");
+      name.addClass("name").text(suite.name);
+      info.append(name).attr("aria-expanded", false);
 
-      let testData = document.createElement("span");
-      testData.class = "data-overview";
+      let testData = $("<span></span>");
       let dataHTML = ` <span class="passed-tests">${formatter.format(
         suite.passed
       )}</span>`;
@@ -145,61 +152,85 @@
       dataHTML += ` / <span class="total-tests">${formatter.format(
         suite.total
       )}</span>`;
-      testData.innerHTML = dataHTML;
-      info.appendChild(testData);
+      testData.addClass("data-overview").html(dataHTML);
+      info.append(testData);
 
-      li.appendChild(info);
+      header.append(info);
+      li.append(header);
 
       if (typeof suite.suites !== "undefined") {
-        let inner = document.createElement("ul");
+        let inner = $("<div></div>")
+          .attr("id", newID)
+          .attr("data-parent", "#" + parentID)
+          .addClass("collapse")
+          .attr("aria-labelledby", headerID);
+
+        let innerInner = $("<div></div>")
+          .addClass("card-body")
+          .addClass("accordion");
+
         for (let innerSuite of suite.suites) {
-          addSuite(inner, innerSuite);
+          addSuite(innerInner, innerSuite, newID);
+          info.attr("aria-controls", newID).attr("data-target", "#" + newID);
         }
-        li.appendChild(inner);
+        inner.append(innerInner);
+        li.append(inner);
       }
 
-      elm.appendChild(li);
+      elm.append(li);
     }
   }
 
   /// Creates the general information structure.
   function createGeneralInfo(data) {
-    let ul = document.createElement("ul");
+    let ul = $("<ul></ul>");
     let latest = data[data.length - 1];
 
-    let latestCommit = document.createElement("li");
-    latestCommit.innerHTML = `Latest commit: <a href="https://github.com/boa-dev/boa/commit/${latest.commit}" title="Check commit">${latest.commit}</a>`;
-    ul.appendChild(latestCommit);
+    let latestCommit = $("<li></li>");
+    latestCommit.html(
+      `Latest commit: <a href="https://github.com/boa-dev/boa/commit/${latest.commit}" title="Check commit">${latest.commit}</a>`
+    );
+    ul.append(latestCommit);
 
-    let totalTests = document.createElement("li");
-    totalTests.innerHTML = `Total tests: <span class="total-tests">${formatter.format(
+    let totalTests = $("<li></li>");
+    totalTests.html(
+      `Total tests: <span class="total-tests">${formatter.format(
         latest.total
-      )}</span>`;
-    ul.appendChild(totalTests);
+      )}</span>`
+    );
+    ul.append(totalTests);
 
-    let passedTests = document.createElement("li");
-    passedTests.innerHTML = `Passed tests: <span class="passed-tests">${formatter.format(
+    let passedTests = $("<li></li>");
+    passedTests.html(
+      `Passed tests: <span class="passed-tests">${formatter.format(
         latest.passed
-      )}</span>`;
-    ul.appendChild(passedTests);
+      )}</span>`
+    );
+    ul.append(passedTests);
 
-    let ignoredTests = document.createElement("li");
-    ignoredTests.innerHTML = `Ignored tests: <span class="ignored-tests">${formatter.format(
+    let ignoredTests = $("<li></li>");
+    ignoredTests.html(
+      `Ignored tests: <span class="ignored-tests">${formatter.format(
         latest.ignored
-      )}</span>`;
-    ul.appendChild(ignoredTests);
+      )}</span>`
+    );
+    ul.append(ignoredTests);
 
-    let failedTests = document.createElement("li");
-    failedTests.innerHTML = `Failed tests: <span class="failed-tests">${formatter.format(
+    let failedTests = $("<li></li>");
+    failedTests.html(
+      `Failed tests: <span class="failed-tests">${formatter.format(
         latest.total - latest.passed - latest.ignored
-      )}</span>`;
-    ul.appendChild(failedTests);
+      )}</span>`
+    );
+    ul.append(failedTests);
 
-    let conformance = document.createElement("li");
-    conformance.innerHTML = `Conformance: <b>${
+    let conformance = $("<li></li>");
+    conformance.html(
+      `Conformance: <b>${
         Math.round((10000 * latest.passed) / latest.total) / 100
-      }%</b>`;
-    ul.appendChild(conformance);
+      }%</b>`
+    );
+    ul.append(conformance);
 
     return ul;
   }
@@ -212,6 +243,6 @@
       tag += ".0";
     }
 
-    return [version, tag]
+    return [version, tag];
   }
 })();

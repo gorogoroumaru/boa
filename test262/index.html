@@ -26,6 +26,10 @@
       .ignored-tests {
         color: #dfa800;
       }
+
+      .card {
+        width: 100%;
+      }
     </style>
   </head>
 
@@ -56,8 +60,14 @@
           id="old-versions"
         ></section>
       </div>
-      <div class="row" id="info" style="display: none"></div>
+      <div
+        class="row accordion col-md-12"
+        id="info"
+        style="display: none"
+      ></div>
     </div>
+    <script src="/assets/jquery-3.5.1.slim.min.js"></script>
+    <script src="/assets/bootstrap.bundle.min.js"></script>
     <script src="/test262/results.js"></script>
   </body>
 </html>
