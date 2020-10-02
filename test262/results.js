@@ -23,47 +23,12 @@
   fetch("/test262/refs/heads/master/results.json")
     .then((response) => response.json())
     .then((data) => {
-      let ul = document.createElement("ul");
-      let latest = data[data.length - 1];
-
-      let latestCommit = document.createElement("li");
-      latestCommit.innerHTML = `Latest commit: <a href="https://github.com/boa-dev/boa/commit/${latest.commit}" title="Check commit">${latest.commit}</a>`;
-      ul.appendChild(latestCommit);
-
-      let totalTests = document.createElement("li");
-      totalTests.innerHTML = `Total tests: <span class="total-tests">${formatter.format(
-        latest.total
-      )}</span>`;
-      ul.appendChild(totalTests);
-
-      let passedTests = document.createElement("li");
-      passedTests.innerHTML = `Passed tests: <span class="passed-tests">${formatter.format(
-        latest.passed
-      )}</span>`;
-      ul.appendChild(passedTests);
-
-      let ignoredTests = document.createElement("li");
-      ignoredTests.innerHTML = `Ignored tests: <span class="ignored-tests">${formatter.format(
-        latest.ignored
-      )}</span>`;
-      ul.appendChild(ignoredTests);
-
-      let failedTests = document.createElement("li");
-      failedTests.innerHTML = `Failed tests: <span class="failed-tests">${formatter.format(
-        latest.total - latest.passed - latest.ignored
-      )}</span>`;
-      ul.appendChild(failedTests);
-
-      let conformance = document.createElement("li");
-      conformance.innerHTML = `Conformance: <b>${
-        Math.round((10000 * latest.passed) / latest.total) / 100
-      }%</b>`;
-      ul.appendChild(conformance);
+      let info = createGeneralInfo(data);
 
       let container = document.getElementById("master-latest");
-      container.innerHTML = "<h2><code>master</code> branch status:</h2>";
+      container.innerHTML = "<h2><code>master</code> branch results:</h2>";
 
-      container.appendChild(ul);
+      container.appendChild(info);
 
       if (typeof latest.master !== "undefined") {
         container.appendChild(infoLink("master"));
@@ -78,9 +43,47 @@
   fetch("https://api.github.com/repos/boa-dev/boa/releases")
     .then((response) => response.json())
     .then((data) => {
-      for (rel of data) {
-        console.log("tag: ", rel.tag_name);
-        // TODO: load overview + information about the tag.
+
+      let latestTag = data[0].tag_name;
+
+      // We set the latest version.
+      fetch(`/test262/refs/tags/${getRefTag(latestTag)[1]}/results.json`)
+        .then((response) => response.json())
+        .then((data) => {
+          let info = createGeneralInfo(data);
+
+          let container = document.getElementById("version-latest");
+          container.innerHTML = `<h2>Latest version (${latestTag}) results:</h2>`;
+
+          container.appendChild(info);
+
+          if (typeof latest[latestTag] !== "undefined") {
+            container.appendChild(infoLink("master"));
+          }
+
+          container.style = "";
+        });
+
+      for (let rel of data) {
+        let [version, tag] = getRefTag(rel.tag_name);
+
+        if (version[0] == "v0" && parseInt(version[1]) < 10) {
+          // We know there is no data for versions lower than v0.10.
+          continue;
+        }
+
+        fetch(`/test262/refs/tags/${tag}/latest.json`)
+          .then((response) => response.json())
+          .then((data) => {
+            latest[rel.tag_name] = data;
+
+            if (rel.tag_name == latestTag) {
+              let container = document.getElementById("version-latest");
+              container.appendChild(infoLink(rel.tag_name));
+            }
+
+            // TODO: add version history.
+          });
       }
     });
 
@@ -108,7 +111,7 @@
     infoContainer.innerHTML = "";
 
     let suites = document.createElement("ul");
-    for (suite of data.results.suites) {
+    for (let suite of data.results.suites) {
       addSuite(suites, suite);
     }
 
@@ -130,7 +133,7 @@
 
       let testData = document.createElement("span");
       testData.class = "data-overview";
-      dataHTML = ` <span class="passed-tests">${formatter.format(
+      let dataHTML = ` <span class="passed-tests">${formatter.format(
         suite.passed
       )}</span>`;
       dataHTML += ` / <span class="ignored-tests">${formatter.format(
@@ -149,7 +152,7 @@
 
       if (typeof suite.suites !== "undefined") {
         let inner = document.createElement("ul");
-        for (innerSuite of suite.suites) {
+        for (let innerSuite of suite.suites) {
           addSuite(inner, innerSuite);
         }
         li.appendChild(inner);
@@ -157,5 +160,58 @@
 
       elm.appendChild(li);
     }
+  }
+
+  /// Creates the general information structure.
+  function createGeneralInfo(data) {
+    let ul = document.createElement("ul");
+    let latest = data[data.length - 1];
+
+    let latestCommit = document.createElement("li");
+    latestCommit.innerHTML = `Latest commit: <a href="https://github.com/boa-dev/boa/commit/${latest.commit}" title="Check commit">${latest.commit}</a>`;
+    ul.appendChild(latestCommit);
+
+    let totalTests = document.createElement("li");
+    totalTests.innerHTML = `Total tests: <span class="total-tests">${formatter.format(
+        latest.total
+      )}</span>`;
+    ul.appendChild(totalTests);
+
+    let passedTests = document.createElement("li");
+    passedTests.innerHTML = `Passed tests: <span class="passed-tests">${formatter.format(
+        latest.passed
+      )}</span>`;
+    ul.appendChild(passedTests);
+
+    let ignoredTests = document.createElement("li");
+    ignoredTests.innerHTML = `Ignored tests: <span class="ignored-tests">${formatter.format(
+        latest.ignored
+      )}</span>`;
+    ul.appendChild(ignoredTests);
+
+    let failedTests = document.createElement("li");
+    failedTests.innerHTML = `Failed tests: <span class="failed-tests">${formatter.format(
+        latest.total - latest.passed - latest.ignored
+      )}</span>`;
+    ul.appendChild(failedTests);
+
+    let conformance = document.createElement("li");
+    conformance.innerHTML = `Conformance: <b>${
+        Math.round((10000 * latest.passed) / latest.total) / 100
+      }%</b>`;
+    ul.appendChild(conformance);
+
+    return ul;
+  }
+
+  function getRefTag(tag) {
+    let version = tag.split(".");
+
+    // Seems that refs are stored with an ending 0:
+    if (version.length == 2) {
+      tag += ".0";
+    }
+
+    return [version, tag]
   }
 })();
