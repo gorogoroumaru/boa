@@ -1,3 +1,4 @@
+"use strict";
 (function () {
   let test262_info = null;
   let latest = {};
