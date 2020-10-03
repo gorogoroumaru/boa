@@ -27,8 +27,24 @@
         color: #dfa800;
       }
 
-      .card {
+      .card:not(.test) {
         width: 100%;
+      }
+
+      #info {
+        margin-top: 1em;
+      }
+
+      .info-link {
+        text-align: center;
+        font-size: 2em;
+      }
+
+      .card.test {
+        width: 2em;
+        margin: 0.5em;
+        cursor: pointer;
+        display: inline-block;
       }
     </style>
   </head>
@@ -60,11 +76,7 @@
           id="old-versions"
         ></section>
       </div>
-      <div
-        class="row accordion col-md-12"
-        id="info"
-        style="display: none"
-      ></div>
+      <div class="row accordion col-md-12 collapse" id="info"></div>
     </div>
     <script src="/assets/jquery-3.5.1.slim.min.js"></script>
     <script src="/assets/bootstrap.bundle.min.js"></script>
