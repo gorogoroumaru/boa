@@ -1,13 +1,7 @@
 "use strict";
 (function () {
-  let test262Info = null;
   let latest = {};
   let formatter = new Intl.NumberFormat("en-GB");
-
-  // Load test262 information:
-  fetch("/test262/info.json")
-    .then((response) => response.json())
-    .then((data) => (test262Info = data));
 
   // Load latest complete data from master:
   fetch("/test262/refs/heads/master/latest.json")
@@ -92,14 +86,7 @@
       .addClass("info-link")
       .append(
         $("<a></a>") // Bootstrap info-square icon:https://icons.getbootstrap.com/icons/info-square/
-          .append(
-            `<svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-info-square" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-    <path fill-rule="evenodd" d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
-    <path fill-rule="evenodd" d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
-    <path d="M8.93 6.588l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588z"/>
-    <circle cx="8" cy="4.5" r="1"/>
-  </svg>`
-          )
+          .append($("<span></span>").addClass("info-link"))
           .addClass("card-link")
           .attr("href", "#")
           .click(() => {
@@ -115,7 +102,7 @@
     setTimeout(
       function () {
         infoContainer.html("");
-        for (let suite of data.results.suites) {
+        for (let suite of data.r.s) {
           addSuite(infoContainer, suite, "info", "test/" + suite.name);
         }
         infoContainer.collapse("show");
@@ -128,7 +115,7 @@
     function addSuite(elm, suite, parentID, namespace) {
       let li = $("<div></div>").addClass("card");
 
-      let newID = parentID + suite.name;
+      let newID = parentID + suite.n;
       let headerID = newID + "header";
       let header = $("<div></div>")
         .attr("id", headerID)
@@ -144,20 +131,20 @@
         .attr("type", "button")
         .attr("data-toggle", "collapse");
 
-      let name = $("<span></span>").addClass("name").text(suite.name);
+      let name = $("<span></span>").addClass("name").text(suite.n);
       info.append(name).attr("aria-expanded", false);
 
       let dataHTML = ` <span class="passed-tests">${formatter.format(
-        suite.passed
+        suite.p
       )}</span>`;
       dataHTML += ` / <span class="ignored-tests">${formatter.format(
-        suite.ignored
+        suite.i
       )}</span>`;
       dataHTML += ` / <span class="failed-tests">${formatter.format(
-        suite.total - suite.passed - suite.ignored
+        suite.c - suite.p - suite.i
       )}</span>`;
       dataHTML += ` / <span class="total-tests">${formatter.format(
-        suite.total
+        suite.c
       )}</span>`;
       info.append($("<span></span>").addClass("data-overview").html(dataHTML));
 
@@ -176,32 +163,48 @@
         .addClass("card-body")
         .addClass("accordion");
 
-      if (typeof suite.tests !== "undefined" && suite.tests.length !== 0) {
+      if (typeof suite.t !== "undefined" && suite.t.length !== 0) {
         let grid = $("<div></div>")
           .addClass("card-body")
           .append($("<h3>Direct tests:</h3>"));
-        for (let innerTest of suite.tests) {
-          let name = namespace + "/" + innerTest.name + ".js";
-          grid.append(
-            $("<div></div>")
-              .addClass("card")
-              .addClass("test")
-              .addClass(innerTest.passed ? "bg-success" : "bg-danger")
-              .addClass("embed-responsive")
-              .addClass("embed-responsive-1by1")
-              .click(() => {
-                window.open(
-                  "https://github.com/tc39/test262/blob/main/" + name
-                );
-              })
-          );
+        for (let innerTest of suite.t) {
+          let name = namespace + "/" + innerTest.n + ".js";
+          let style;
+          switch (innerTest.r) {
+            case "O":
+              style = "bg-success";
+              break;
+            case "I":
+              style = "bg-warning";
+              break;
+            default:
+              style = "bg-danger";
+          }
+
+          let testCard = $("<div></div>")
+            .addClass("card")
+            .addClass("test")
+            .addClass(style)
+            .addClass("embed-responsive")
+            .addClass("embed-responsive-1by1")
+            .click(() => {
+              window.open("https://github.com/tc39/test262/blob/main/" + name);
+            });
+
+          if (innerTest.r === "P") {
+            testCard.append(
+              $("<span></span>").addClass("exclamation-triangle")
+            );
+          }
+
+          grid.append(testCard);
         }
 
         innerInner.append($("<div></div>").addClass("card").append(grid));
       }
 
-      if (typeof suite.suites !== "undefined" && suite.suites.length !== 0) {
-        for (let innerSuite of suite.suites) {
+      if (typeof suite.s !== "undefined" && suite.s.length !== 0) {
+        for (let innerSuite of suite.s) {
           addSuite(
             innerInner,
             innerSuite,
@@ -237,7 +240,7 @@
         $("<li></li>")
           .addClass("list-group-item")
           .html(
-            `Latest commit: <a href="https://github.com/boa-dev/boa/commit/${latest.commit}" title="Check commit">${latest.commit}</a>`
+            `Latest commit: <a href="https://github.com/boa-dev/boa/commit/${latest.c}" title="Check commit">${latest.c}</a>`
           )
       )
       .append(
@@ -245,7 +248,7 @@
           .addClass("list-group-item")
           .html(
             `Total tests: <span class="total-tests">${formatter.format(
-              latest.total
+              latest.t
             )}</span>`
           )
       )
@@ -254,7 +257,7 @@
           .addClass("list-group-item")
           .html(
             `Passed tests: <span class="passed-tests">${formatter.format(
-              latest.passed
+              latest.p
             )}</span>`
           )
       )
@@ -263,7 +266,7 @@
           .addClass("list-group-item")
           .html(
             `Ignored tests: <span class="ignored-tests">${formatter.format(
-              latest.ignored
+              latest.i
             )}</span>`
           )
       )
@@ -272,7 +275,7 @@
           .addClass("list-group-item")
           .html(
             `Failed tests: <span class="failed-tests">${formatter.format(
-              latest.total - latest.passed - latest.ignored
+              latest.t - latest.p - latest.i
             )}</span>`
           )
       )
@@ -281,7 +284,7 @@
           .addClass("list-group-item")
           .html(
             `Conformance: <b>${
-              Math.round((10000 * latest.passed) / latest.total) / 100
+              Math.round((10000 * latest.p) / latest.t) / 100
             }%</b>`
           )
         // TODO: add progress bar
