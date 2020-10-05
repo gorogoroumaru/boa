@@ -208,13 +208,6 @@ impl PropertyDescriptor {
         self.attribute.writable()
     }
 
-    /// Set value
-    #[inline]
-    pub fn value(mut self, value: Value) -> Self {
-        self.value = Some(value);
-        self
-    }
-
     /// Set get
     #[inline]
     pub fn get(mut self, get: Value) -> Self {

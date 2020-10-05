@@ -123,7 +123,7 @@ impl Object {
             }
 
             // Change value on the current descriptor
-            own_desc = own_desc.value(val);
+            own_desc.value = Some(val);
             return self.define_own_property(key, own_desc);
         }
         // [4]
