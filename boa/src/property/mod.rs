@@ -102,7 +102,9 @@ pub struct AccessorDescriptor {
 }
 
 impl AccessorDescriptor {
-    pub fn new(get: Option<GcObject>, set: Option<GcObject>, attribute: Attribute) -> Self {
+    pub fn new(get: Option<GcObject>, set: Option<GcObject>, mut attribute: Attribute) -> Self {
+        // Accessors can not have writable attribute.
+        attribute.remove(Attribute::WRITABLE);
         Self {
             get,
             set,
@@ -208,30 +210,6 @@ impl PropertyDescriptor {
         self.attribute.writable()
     }
 
-    /// Set get
-    #[inline]
-    pub fn get(mut self, get: Value) -> Self {
-        self.get = Some(get);
-        self
-    }
-
-    #[inline]
-    pub fn has_get(&self) -> bool {
-        self.get.is_some()
-    }
-
-    /// Set set
-    #[inline]
-    pub fn set(mut self, set: Value) -> Self {
-        self.set = Some(set);
-        self
-    }
-
-    #[inline]
-    pub fn has_set(&self) -> bool {
-        self.set.is_some()
-    }
-
     /// An accessor Property Descriptor is one that includes any fields named either [[Get]] or [[Set]].
     ///
     /// More information:
@@ -285,36 +263,6 @@ impl From<&PropertyDescriptor> for Value {
         property.set_field("get", value.get.clone().unwrap_or_else(Value::null));
         property.set_field("set", value.set.clone().unwrap_or_else(Value::null));
         property
-    }
-}
-
-impl<'a> From<&'a Value> for PropertyDescriptor {
-    /// Attempt to fetch values "configurable", "enumerable", "writable" from the value,
-    /// if they're not there default to false
-    fn from(value: &Value) -> Self {
-        let mut attribute = Attribute::empty();
-
-        let writable = value.get_field("writable");
-        if !writable.is_undefined() {
-            attribute.set_writable(bool::from(&writable));
-        }
-
-        let enumerable = value.get_field("enumerable");
-        if !enumerable.is_undefined() {
-            attribute.set_enumerable(bool::from(&enumerable));
-        }
-
-        let configurable = value.get_field("configurable");
-        if !configurable.is_undefined() {
-            attribute.set_configurable(bool::from(&configurable));
-        }
-
-        Self {
-            attribute,
-            value: Some(value.get_field("value")),
-            get: Some(value.get_field("get")),
-            set: Some(value.get_field("set")),
-        }
     }
 }
 

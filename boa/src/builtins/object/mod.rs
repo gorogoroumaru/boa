@@ -16,7 +16,7 @@
 use crate::{
     builtins::BuiltIn,
     object::{ConstructorBuilder, Object as BuiltinObject, ObjectData},
-    property::{Attribute, PropertyDescriptor},
+    property::Attribute,
     value::{same_value, Value},
     BoaProfiler, Context, Result,
 };
@@ -129,13 +129,18 @@ impl Object {
     }
 
     /// Define a property in an object
-    pub fn define_property(_: &Value, args: &[Value], ctx: &mut Context) -> Result<Value> {
+    pub fn define_property(_: &Value, args: &[Value], context: &mut Context) -> Result<Value> {
         let obj = args.get(0).expect("Cannot get object");
         let prop = args
             .get(1)
             .expect("Cannot get object")
-            .to_property_key(ctx)?;
-        let desc = PropertyDescriptor::from(args.get(2).expect("Cannot get object"));
+            .to_property_key(context)?;
+
+        let desc = if let Value::Object(ref object) = args.get(2).cloned().unwrap_or_default() {
+            object.to_property_descriptor(context)?
+        } else {
+            return context.throw_type_error("Property description must be an object");
+        };
         obj.set_property(prop, desc);
         Ok(Value::undefined())
     }
